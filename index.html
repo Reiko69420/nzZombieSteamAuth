@@ -3,17 +3,38 @@
 <head>
     <title>Authentification Steam pour GMOD</title>
     <meta charset="utf-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        #status {
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 600px;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+        }
+        #authResult {
+            font-weight: bold;
+            font-size: 18px;
+        }
+    </style>
 </head>
 <body>
+    <h1>Authentification Steam pour GMOD</h1>
     <div id="status">Vérification de l'authentification Steam...</div>
+    <div id="authResult"></div>
 
     <script>
         // Fonction principale d'authentification
         async function processSteamAuth() {
             const statusElement = document.getElementById('status');
+            const resultElement = document.getElementById('authResult');
             
             try {
-                // 1. Vérifier si nous sommes sur une redirection de Steam
+                // Vérifier si nous sommes sur une redirection de Steam
                 const params = new URLSearchParams(window.location.search);
                 const steamIdentity = params.get('openid.identity');
                 
@@ -23,25 +44,33 @@
                     return;
                 }
                 
-                // 2. Extraire le SteamID64 de l'identité Steam
+                // Extraire le SteamID64 de l'identité Steam
                 const steamID64 = steamIdentity.split('/').pop();
                 statusElement.textContent = `Authentification réussie pour SteamID: ${steamID64}`;
                 
-                // 3. Créer un jeton d'authentification (simple dans cet exemple, à améliorer en production)
+                // Créer un jeton d'authentification
                 const timestamp = Date.now();
                 const token = btoa(`${steamID64}:${timestamp}:votre_sel_secret`);
                 
-                // 4. Rediriger vers GMOD avec le protocole personnalisé
-                // Vous pouvez aussi utiliser localStorage et un mécanisme de polling
-                setTimeout(() => {
-                    window.location.href = `gmod://auth/${token}/${steamID64}`;
-                    
-                    // Message pour les utilisateurs
-                    statusElement.textContent = "Redirection vers GMOD... Cliquez sur 'Ouvrir' si une boîte de dialogue apparaît.";
-                }, 1500);
+                // Stocker le résultat dans localStorage pour que GMOD puisse le récupérer
+                const authData = {
+                    steamID64: steamID64,
+                    token: token,
+                    timestamp: timestamp
+                };
+                
+                localStorage.setItem('gmodAuthData', JSON.stringify(authData));
+                
+                // Afficher le résultat pour confirmation visuelle
+                resultElement.innerHTML = `
+                    <p style="color: green;">✓ Authentification réussie!</p>
+                    <p>Vous pouvez maintenant revenir à GMOD.</p>
+                    <p>Le jeu va automatiquement détecter votre authentification.</p>
+                `;
                 
             } catch (error) {
                 statusElement.textContent = `Erreur: ${error.message}`;
+                resultElement.innerHTML = `<p style="color: red;">✗ Échec de l'authentification</p>`;
                 console.error(error);
             }
         }
